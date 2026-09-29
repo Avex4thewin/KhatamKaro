@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+
+{% set inp = "w-full bg-navy border border-navy-lighter rounded-lg px-3 py-2.5 text-white" %}
+{% set lbl = "block text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5" %}
+{% set tt = form.task_type if form.task_type is defined else form.tasktype %}
+
+<h1 class="text-3xl font-bold text-white mb-6">{{ title }}</h1>
+
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <div class="lg:col-span-3 bg-navy-light/90 border border-navy-lighter rounded-2xl p-6">
+        <form method="POST" class="space-y-4">
+            {{ form.hidden_tag() }}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="{{ lbl }}">{{ form.subject_id.label.text }}</label>
+                    {{ form.subject_id(id="subject_id", class="custom-select " ~ inp, onchange="updatePreview()") }}
+                    <details class="mt-1.5">
+                        <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300">Not in the list? Type your own</summary>
+                        <div class="mt-2">{{ form.custom_subject(class=inp ~ " text-sm", oninput="updatePreview()") }}</div>
+                    </details>
+                </div>
+                <div>
+                    <label class="{{ lbl }}">{{ form.chapter_id.label.text }}</label>
+                    {{ form.chapter_id(id="chapter_id", class="custom-select " ~ inp, onchange="updatePreview()") }}
+                    <details class="mt-1.5">
+                        <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300">Not in the list? Type your own</summary>
+                        <div class="mt-2">{{ form.custom_chapter(class=inp ~ " text-sm", oninput="updatePreview()") }}</div>
+                    </details>
+                </div>
+            </div>
+
+            <div>
+                <label class="{{ lbl }}">{{ tt.label.text }}</label>
+                {{ tt(class=inp, oninput="updatePreview()", placeholder="Revision, test, assignment…") }}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="{{ lbl }}">{{ form.deadline.label.text }}</label>
+                    {{ form.deadline(class=inp ~ " font-mono") }}
+                </div>
+                <div>
+                    <label class="{{ lbl }}">Time (min)</label>
+                    {{ form.time_required(class=inp ~ " font-mono", oninput="updatePreview()") }}
+                </div>
+                <div>
+                    <label class="{{ lbl }}">Sessions</label>
+                    {{ form.split_count(class=inp ~ " font-mono", oninput="updatePreview()") }}
+                </div>
+            </div>
+
+            <div>
+                <label class="{{ lbl }}">Difficulty</label>
+                <div class="hidden">{{ form.difficulty() }}</div>
+                <div class="grid grid-cols-5 gap-2" id="difficulty-picker">
+                    {% for i in range(1, 6) %}
+                    {% set tier = 'bg-red-500' if i >= 4 else ('bg-yellow' if i == 3 else 'bg-sky-400') %}
+                    <button type="button" data-value="{{ i }}" onclick="setDifficulty({{ i }})"
+                        class="difficulty-btn rounded-lg border border-navy-lighter py-2.5 flex flex-col items-center gap-1.5 opacity-60 hover:opacity-100 transition">
+                        <span class="flex gap-1">
+                            {% for d in range(5) %}<span class="w-1.5 h-1.5 rounded-sm {{ tier if d < i else 'bg-navy-lighter' }}"></span>{% endfor %}
+                        </span>
+                        <span class="text-[11px] text-gray-400">{{ ['Easy', 'Mild', 'Medium', 'Hard', 'Very hard'][i - 1] }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 pt-2">
+                {{ form.submit(class="rounded-lg border-2 border-yellow text-yellow font-semibold px-6 py-2.5 hover:bg-yellow hover:text-navy hover:shadow-[0_0_20px_rgba(255,182,39,0.35)] transition cursor-pointer") }}
+                <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-white text-sm">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="lg:col-span-2 lg:sticky lg:top-6 self-start">
+        <p class="text-xs text-gray-500 mb-3 uppercase tracking-widest">Live preview</p>
+        <div class="bg-gradient-to-br from-navy-light to-navy border border-navy-lighter rounded-2xl p-6">
+            <p id="preview-subject" class="text-2xl font-serif font-bold text-white">New task</p>
+            <p id="preview-chapter" class="text-gray-400 text-sm mt-1">No chapter selected</p>
+            <span id="preview-type" class="hidden mt-3 inline-block text-xs rounded-full bg-navy-lighter text-gray-300 px-2.5 py-1"></span>
+
+            <div class="grid grid-cols-2 gap-4 mt-5 text-sm">
+                <div>
+                    <p class="text-gray-500 text-xs mb-1">Deadline</p>
+                    <p id="preview-deadline" class="font-mono text-gray-200">—</p>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-xs mb-1">Time needed</p>
+                    <p id="preview-time" class="font-mono text-gray-200">—</p>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <p class="text-gray-500 text-xs mb-1.5">Difficulty</p>
+                <span id="preview-difficulty" class="inline-flex gap-1"></span>
+            </div>
+
+            <div class="mt-5 rounded-xl border border-yellow/30 bg-yellow/5 px-4 py-3">
+                <p class="text-xs text-yellow uppercase tracking-wide mb-1">Scheduler will reserve</p>
+                <p id="preview-reserve" class="font-mono text-sm text-gray-200">Enter a time to see this</p>
+            </div>
+        </div>
+        <p class="text-xs text-gray-600 mt-3">Harder tasks get extra time built in, and splitting spreads it across days.</p>
+    </div>
+
+</div>
+
+<script>
+    const chapterMap = {{ chapter_map | tojson }};
+    const subjectSelect = document.getElementById('subject_id');
+    const chapterSelect = document.getElementById('chapter_id');
+    const customSubject = document.querySelector('input[name="custom_subject"]');
+    const customChapter = document.querySelector('input[name="custom_chapter"]');
+    const taskTypeField = document.querySelector('input[name="task_type"], input[name="tasktype"]');
+    const deadlineField = document.querySelector('input[name="deadline"]');
+    const timeField = document.querySelector('input[name="time_required"]');
+    const splitField = document.querySelector('input[name="split_count"]');
+    const difficultyField = document.querySelector('select[name="difficulty"]');
+
+    function updateChapters(keepValue) {
+        chapterSelect.innerHTML = '<option value="0">-- None --</option>';
+        (chapterMap[subjectSelect.value] || []).forEach(function(chapter) {
+            const option = document.createElement('option');
+            option.value = chapter.id;
+            option.textContent = chapter.name;
+            chapterSelect.appendChild(option);
+        });
+        if (keepValue && Array.from(chapterSelect.options).some(function(o) { return o.value == keepValue; })) {
+            chapterSelect.value = keepValue;
+        }
+        if (chapterSelect._rebuild) chapterSelect._rebuild();
+        updatePreview();
+    }
+    subjectSelect.addEventListener('change', function() { updateChapters(); });
+
+    function tierClass(d) { return d >= 4 ? 'bg-red-500' : (d == 3 ? 'bg-yellow' : 'bg-sky-400'); }
+
+    function setDifficulty(value) {
+        difficultyField.value = value;
+        document.querySelectorAll('.difficulty-btn').forEach(function(btn) {
+            const selected = parseInt(btn.dataset.value) === value;
+            btn.classList.toggle('border-yellow', selected);
+            btn.classList.toggle('opacity-100', selected);
+            btn.classList.toggle('opacity-60', !selected);
+            btn.style.boxShadow = selected ? '0 0 16px rgba(255,182,39,0.25)' : 'none';
+        });
+        updatePreview();
+    }
+
+    function updatePreview() {
+        const subj = customSubject.value || subjectSelect.options[subjectSelect.selectedIndex].text;
+        document.getElementById('preview-subject').textContent = (subj && subj !== '-- Select --') ? subj : 'New task';
+
+        const chap = customChapter.value || (chapterSelect.options[chapterSelect.selectedIndex] || {}).text;
+        document.getElementById('preview-chapter').textContent = (chap && chap !== '-- None --') ? chap : 'No chapter selected';
+
+        const typeBadge = document.getElementById('preview-type');
+        typeBadge.textContent = taskTypeField ? taskTypeField.value : '';
+        typeBadge.classList.toggle('hidden', !(taskTypeField && taskTypeField.value));
+
+        document.getElementById('preview-deadline').textContent = deadlineField.value || '—';
+        const mins = parseInt(timeField.value) || 0;
+        document.getElementById('preview-time').textContent = mins ? mins + ' min' : '—';
+
+        const diff = parseInt(difficultyField.value) || 0;
+        let dots = '';
+        for (let i = 0; i < 5; i++) {
+            dots += '<span class="w-2 h-2 rounded-sm ' + (i < diff ? tierClass(diff) : 'bg-navy-lighter') + '"></span>';
+        }
+        document.getElementById('preview-difficulty').innerHTML = dots;
+
+        const split = Math.max(parseInt(splitField.value) || 1, 1);
+        const reserve = document.getElementById('preview-reserve');
+        if (mins && diff) {
+            const buffered = mins * (1 + diff * 0.1);
+            const chunkSlots = Math.floor((buffered / split + 29) / 30);
+            const total = chunkSlots * split;
+            reserve.textContent = '≈ ' + Math.round(buffered) + ' min · ' + total + ' half-hour slots' +
+                (split > 1 ? ' (' + split + ' sessions × ' + chunkSlots + ')' : '');
+        } else {
+            reserve.textContent = 'Enter a time to see this';
+        }
+    }
+
+    [deadlineField, timeField, splitField].forEach(function(el) {
+        el.addEventListener('input', updatePreview);
+        el.addEventListener('change', updatePreview);
+    });
+
+    const initialChapter = chapterSelect.value;
+    if (subjectSelect.value && subjectSelect.value !== '0') updateChapters(initialChapter);
+
+    if (difficultyField.value) setDifficulty(parseInt(difficultyField.value));
+    updatePreview();
+</script>
+
+{% endblock %}

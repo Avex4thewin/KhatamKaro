@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Calendar{% endblock %}
+{% block content %}
+
+<div class="flex flex-wrap items-end justify-between gap-4 mb-5">
+    <div>
+        <h1 class="text-3xl font-bold text-white">Weekly Calendar</h1>
+        <p class="text-sm text-gray-400 font-mono mt-1">{{ week_dates[0].strftime('%d %b') }} – {{ week_dates[6].strftime('%d %b %Y') }}</p>
+    </div>
+    <div class="flex items-center gap-2 text-sm">
+        <a href="{{ url_for('calendar', week_offset=week_offset - 1) }}" class="flex items-center gap-1.5 bg-navy-light border border-navy-lighter rounded-lg px-3 py-2 hover:border-yellow hover:text-yellow transition">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg> Prev
+        </a>
+        {% if week_offset != 0 %}
+        <a href="{{ url_for('calendar') }}" class="bg-navy-light border border-navy-lighter rounded-lg px-3 py-2 hover:border-yellow hover:text-yellow transition">This week</a>
+        {% endif %}
+        <a href="{{ url_for('calendar', week_offset=week_offset + 1) }}" class="flex items-center gap-1.5 bg-navy-light border border-navy-lighter rounded-lg px-3 py-2 hover:border-yellow hover:text-yellow transition">
+            Next <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
+        </a>
+    </div>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-4 text-xs">
+    <span class="flex items-center gap-2 bg-navy-light border border-navy-lighter rounded-full px-3 py-1 text-gray-300"><span class="w-2 h-2 rounded-full bg-sky-500"></span> Recurring</span>
+    <span class="flex items-center gap-2 bg-navy-light border border-navy-lighter rounded-full px-3 py-1 text-gray-300"><span class="w-2 h-2 rounded-full bg-purple-500"></span> One-off</span>
+    <span class="flex items-center gap-2 bg-navy-light border border-navy-lighter rounded-full px-3 py-1 text-gray-300"><span class="w-2 h-2 rounded-full bg-yellow"></span> Scheduled task</span>
+</div>
+
+<div class="bg-navy-light/80 border border-navy-lighter rounded-2xl overflow-x-auto lg:-mx-8">
+    <table class="w-full min-w-[820px] border-separate text-xs" style="border-spacing:3px;">
+        <thead>
+            <tr>
+                <th class="w-14"></th>
+                {% for d in week_dates %}
+                <th class="py-3 text-center font-medium {% if d == today %}text-yellow{% else %}text-gray-300{% endif %}">
+                    <div class="uppercase tracking-wide text-[11px]">{{ ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][loop.index0] }}</div>
+                    <div class="mt-1 inline-flex w-8 h-8 items-center justify-center rounded-full font-mono text-sm {% if d == today %}bg-yellow text-navy font-bold{% endif %}">{{ d.day }}</div>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for slot in visible_slots %}
+            <tr>
+                <td class="pr-2 text-right align-top font-mono text-[11px] {% if slot % 2 == 0 %}text-gray-400{% else %}text-gray-700{% endif %}">
+                    {{ '%02d:%02d' % (slot // 2, (slot % 2) * 30) }}
+                </td>
+                {% for day_index in range(7) %}
+                    {% set cell = render_grid.get((slot, day_index), 'SKIP') %}
+                    {% set is_today = week_dates[day_index] == today %}
+                    {% if cell == 'SKIP' %}
+                    {% elif cell is none %}
+                        <td class="h-7 rounded-md {% if is_today %}bg-yellow/5{% else %}bg-navy/60{% endif %}"></td>
+                    {% elif cell.type == 'task' %}
+                        <td rowspan="{{ cell.span }}"
+                            onclick='showTaskDetails({{ {"label": cell.label, "chapter": cell.chapter, "deadline": cell.deadline, "difficulty": cell.difficulty, "time_required": cell.time_required, "completed": cell.completed, "edit_url": url_for("edit_task", task_id=cell.task_id)} | tojson }})'
+                            class="rounded-lg px-2 py-1 text-center align-middle cursor-pointer bg-gradient-to-br from-yellow to-amber-400 text-navy font-semibold shadow-md hover:shadow-[0_0_18px_rgba(255,182,39,0.5)] transition-shadow">
+                            <div>{{ cell.label }}</div>
+                            {% if cell.span >= 2 %}
+                            <div class="font-mono text-[10px] font-normal opacity-70">{{ '%02d:%02d' % (slot // 2, (slot % 2) * 30) }}–{{ '%02d:%02d' % ((slot + cell.span) // 2, ((slot + cell.span) % 2) * 30) }}</div>
+                            {% endif %}
+                        </td>
+                    {% elif cell.type == 'oneoff' %}
+                        <td rowspan="{{ cell.span }}" class="rounded-lg px-2 py-1 text-center align-middle bg-purple-950/80 text-purple-200 border-l-2 border-purple-500"
+                            {% if cell.color %}style="background:{{ cell.color }}26; border-color:{{ cell.color }}; color:{{ cell.color }};"{% endif %}>
+                            {{ cell.label }}
+                        </td>
+                    {% else %}
+                        <td rowspan="{{ cell.span }}" class="rounded-lg px-2 py-1 text-center align-middle bg-sky-950/80 text-sky-200 border-l-2 border-sky-500"
+                            {% if cell.color %}style="background:{{ cell.color }}26; border-color:{{ cell.color }}; color:{{ cell.color }};"{% endif %}>
+                            {{ cell.label }}
+                        </td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="task-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4" onclick="closeModal()">
+    <div class="bg-navy-light border border-yellow/40 rounded-2xl p-6 w-full max-w-sm shadow-[0_0_40px_rgba(255,182,39,0.15)]" onclick="event.stopPropagation()">
+        <div class="flex items-start justify-between mb-4">
+            <h3 id="modal-subject" class="text-2xl font-bold text-yellow"></h3>
+            <span id="modal-status" class="text-xs rounded-full px-2.5 py-1 font-medium"></span>
+        </div>
+        <dl class="space-y-2 text-sm">
+            <div class="flex justify-between"><dt class="text-gray-400">Chapter</dt><dd id="modal-chapter" class="text-white text-right"></dd></div>
+            <div class="flex justify-between"><dt class="text-gray-400">Deadline</dt><dd id="modal-deadline" class="text-white font-mono"></dd></div>
+            <div class="flex justify-between items-center"><dt class="text-gray-400">Difficulty</dt><dd id="modal-difficulty" class="flex gap-1"></dd></div>
+            <div class="flex justify-between"><dt class="text-gray-400">Time needed</dt><dd class="text-white font-mono"><span id="modal-time"></span> min</dd></div>
+        </dl>
+        <div class="flex gap-2 mt-6">
+            <a id="modal-edit" href="#" class="flex-1 text-center bg-yellow text-navy font-semibold rounded-lg py-2 hover:shadow-[0_0_18px_rgba(255,182,39,0.4)] transition-shadow">Edit task</a>
+            <button onclick="closeModal()" class="flex-1 border border-navy-lighter rounded-lg py-2 text-gray-300 hover:border-yellow hover:text-yellow transition">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showTaskDetails(task) {
+        document.getElementById('modal-subject').textContent = task.label;
+        document.getElementById('modal-chapter').textContent = task.chapter;
+        document.getElementById('modal-deadline').textContent = task.deadline;
+        document.getElementById('modal-time').textContent = task.time_required || '—';
+        document.getElementById('modal-edit').href = task.edit_url;
+
+        const status = document.getElementById('modal-status');
+        status.textContent = task.completed ? 'Completed' : 'Pending';
+        status.className = 'text-xs rounded-full px-2.5 py-1 font-medium ' +
+            (task.completed ? 'bg-yellow text-navy' : 'bg-navy-lighter text-gray-400');
+
+        const tier = task.difficulty >= 4 ? 'bg-red-500' : (task.difficulty == 3 ? 'bg-yellow' : 'bg-sky-400');
+        let dots = '';
+        for (let i = 0; i < 5; i++) {
+            dots += '<span class="w-2 h-2 rounded-sm ' + (i < task.difficulty ? tier : 'bg-navy-lighter') + '"></span>';
+        }
+        document.getElementById('modal-difficulty').innerHTML = dots;
+
+        const modal = document.getElementById('task-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('task-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+</script>
+
+{% endblock %}

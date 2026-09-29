@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Welcome back, {{ current_user.username }}</h1>
+    <a href="{{ url_for('new_task') }}" class="flex items-center gap-2 bg-yellow text-navy font-semibold px-5 py-2.5 rounded-lg hover:shadow-[0_0_20px_rgba(255,182,39,0.4)] transition-shadow">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>
+        Add Task
+    </a>
+</div>
+
+<div class="grid grid-cols-3 gap-4 mb-8">
+
+    <div class="col-span-2 bg-gradient-to-br from-navy-light to-navy border border-yellow rounded-lg p-6 flex items-center justify-between">
+        <div>
+            <p class="text-yellow text-xs uppercase tracking-widest mb-2">Next Up</p>
+            {% if next_task %}
+            <p class="text-3xl font-serif font-bold text-white">{{ next_task.subject.name if next_task.subject else next_task.custom_subject }}</p>
+            <p class="text-sm text-gray-400 font-mono mt-1">Due {{ next_task.deadline or 'whenever' }}</p>
+            {% else %}
+            <p class="text-2xl font-serif font-bold text-gray-400">All clear</p>
+            {% endif %}
+        </div>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FFB627" stroke-width="1.5" class="opacity-60"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+    </div>
+
+    <div class="flex flex-col gap-4">
+        <div class="flex-1 bg-navy-light border border-navy-lighter rounded-lg px-5 py-3 flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-xs uppercase tracking-wide">Pending</p>
+                <p class="text-4xl font-mono font-bold text-sky-400 leading-none">{{ pending_count }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500 text-xs uppercase tracking-wide">Done</p>
+                <p class="text-4xl font-mono font-bold text-emerald-400 leading-none">{{ completed_count }}</p>
+            </div>
+        </div>
+        <div class="bg-navy-light border {% if due_soon_count > 0 %}border-red-700{% else %}border-navy-lighter{% endif %} rounded-lg px-5 py-3">
+            <p class="text-gray-500 text-xs uppercase tracking-wide">Due within 3 days</p>
+            <p class="text-4xl font-mono font-bold leading-none {% if due_soon_count > 0 %}text-red-400{% else %}text-white{% endif %}">{{ due_soon_count }}</p>
+        </div>
+    </div>
+
+</div>
+
+<div class="bg-navy-light border border-navy-lighter rounded-lg overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-navy-lighter text-white text-left">
+                <th class="p-3 font-semibold text-base"><a href="{{ url_for('dashboard', sort='subject') }}" class="hover:text-yellow {% if current_sort == 'subject' %}text-yellow{% endif %}">Subject {% if current_sort == 'subject' %}↓{% endif %}</a></th>
+                <th class="p-3 font-semibold text-base"><a href="{{ url_for('dashboard', sort='chapter') }}" class="hover:text-yellow {% if current_sort == 'chapter' %}text-yellow{% endif %}">Chapter {% if current_sort == 'chapter' %}↓{% endif %}</a></th>
+                <th class="p-3 font-semibold text-base"><a href="{{ url_for('dashboard', sort='deadline') }}" class="hover:text-yellow {% if current_sort == 'deadline' %}text-yellow{% endif %}">Deadline {% if current_sort == 'deadline' %}↓{% endif %}</a></th>
+                <th class="p-3 font-semibold text-base"><a href="{{ url_for('dashboard', sort='difficulty') }}" class="hover:text-yellow {% if current_sort == 'difficulty' %}text-yellow{% endif %}">Difficulty {% if current_sort == 'difficulty' %}↓{% endif %}</a></th>
+                <th class="p-3 font-semibold text-base"><a href="{{ url_for('dashboard', sort='time_required') }}" class="hover:text-yellow {% if current_sort == 'time_required' %}text-yellow{% endif %}">Time {% if current_sort == 'time_required' %}↓{% endif %}</a></th>
+                <th class="p-3 font-medium">Status</th>
+                <th class="p-3 font-medium">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr class="border-t border-navy-lighter hover:bg-navy-lighter/40 transition-colors">
+                <td class="p-3 font-medium text-white">{{ task.subject.name if task.subject else task.custom_subject }}</td>
+                <td class="p-3 text-gray-400">{{ task.chapter.name if task.chapter else (task.custom_chapter or '—') }}</td>
+                <td class="p-3 font-mono text-sm {{ deadline_urgency_class(task.deadline) }}">{{ task.deadline or '—' }}</td>
+                <td class="p-3">
+                    <span class="inline-flex gap-0.5">
+                        {% for i in range(5) %}
+                        <span class="w-1.5 h-1.5 rounded-sm {% if i < task.difficulty %}bg-yellow{% else %}bg-navy-lighter{% endif %}"></span>
+                        {% endfor %}
+                    </span>
+                </td>
+                <td class="p-3 text-gray-400 font-mono text-sm">{{ task.time_required or '—' }} min</td>
+                <td class="p-3">
+                    <form method="POST" action="{{ url_for('complete_task', task_id=task.id) }}">
+                        <button type="submit" class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium transition {% if task.completed %}bg-yellow text-navy{% else %}bg-navy-lighter text-gray-400 hover:bg-navy-lighter/70{% endif %}">
+                            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 8l4 4 8-8"/></svg>
+                            {{ 'Done' if task.completed else 'Pending' }}
+                        </button>
+                    </form>
+                </td>
+                <td class="p-3">
+                    <div class="flex items-center gap-2 text-gray-500">
+                        <a href="{{ url_for('edit_task', task_id=task.id) }}" class="hover:text-yellow" title="Edit">
+                            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2l3 3-8 8H3v-3l8-8z"/></svg>
+                        </a>
+                        <form method="POST" action="{{ url_for('delete_task', task_id=task.id) }}" onsubmit="return confirm('Delete this task?');">
+                            <button type="submit" class="hover:text-red-400" title="Delete">
+                                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M6 4V2h4v2M3 4l1 10h8l1-10"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="p-8 text-center text-gray-400">No tasks yet — add your first one above.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+
+

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Commitments{% endblock %}
+{% block content %}
+
+{% set inp = "w-full bg-navy border border-navy-lighter rounded-lg px-3 py-2.5 text-white" %}
+{% set lbl = "block text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5" %}
+{% set days_short = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+
+<div class="mb-6">
+    <h1 class="text-3xl font-bold text-white">Commitments</h1>
+    <p class="text-sm text-gray-400 mt-1">Time that's already spoken for. The scheduler plans around all of it.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <div class="bg-navy-light/90 border border-navy-lighter rounded-2xl p-6">
+        <h2 class="flex items-center gap-2 text-lg font-semibold text-white mb-4"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Recurring</h2>
+        <form method="POST" class="space-y-4">
+            {{ fixed_form.hidden_tag() }}
+            <div>
+                <label class="{{ lbl }}">{{ fixed_form.label.label.text }}</label>
+                {{ fixed_form.label(class=inp, placeholder="School, tuition, gym…") }}
+            </div>
+            <div>
+                <label class="{{ lbl }}">{{ fixed_form.days.label.text }}</label>
+                <div class="flex flex-wrap gap-2">
+                    {% for sub in fixed_form.days %}
+                    <label class="cursor-pointer">
+                        {{ sub(class="peer sr-only") }}
+                        <span class="block px-3 py-1.5 rounded-lg border border-navy-lighter text-sm text-gray-300 transition peer-checked:bg-yellow peer-checked:text-navy peer-checked:border-yellow peer-checked:font-semibold hover:border-yellow">{{ sub.label.text[:3] }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="{{ lbl }}">{{ fixed_form.start_time.label.text }}</label>
+                    {{ fixed_form.start_time(class=inp ~ " font-mono") }}
+                </div>
+                <div>
+                    <label class="{{ lbl }}">{{ fixed_form.end_time.label.text }}</label>
+                    {{ fixed_form.end_time(class=inp ~ " font-mono") }}
+                </div>
+            </div>
+            {{ fixed_form.submit_fixed(class="rounded-lg border-2 border-yellow text-yellow font-semibold px-5 py-2.5 hover:bg-yellow hover:text-navy hover:shadow-[0_0_20px_rgba(255,182,39,0.35)] transition cursor-pointer") }}
+        </form>
+    </div>
+
+    <div class="bg-navy-light/90 border border-navy-lighter rounded-2xl p-6">
+        <h2 class="flex items-center gap-2 text-lg font-semibold text-white mb-4"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> One-off</h2>
+        <form method="POST" class="space-y-4">
+            {{ oneoff_form.hidden_tag() }}
+            <div>
+                <label class="{{ lbl }}">{{ oneoff_form.label.label.text }}</label>
+                {{ oneoff_form.label(class=inp, placeholder="Dentist, family dinner…") }}
+            </div>
+            <div>
+                <label class="{{ lbl }}">{{ oneoff_form.date.label.text }}</label>
+                {{ oneoff_form.date(class=inp ~ " font-mono") }}
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="{{ lbl }}">{{ oneoff_form.start_time.label.text }}</label>
+                    {{ oneoff_form.start_time(class=inp ~ " font-mono") }}
+                </div>
+                <div>
+                    <label class="{{ lbl }}">{{ oneoff_form.end_time.label.text }}</label>
+                    {{ oneoff_form.end_time(class=inp ~ " font-mono") }}
+                </div>
+            </div>
+            <div>
+                <label class="{{ lbl }}">{{ oneoff_form.subject_id.label.text }}</label>
+                {{ oneoff_form.subject_id(class="custom-select " ~ inp) }}
+            </div>
+            {{ oneoff_form.submit_oneoff(class="rounded-lg border-2 border-purple-500 text-purple-400 font-semibold px-5 py-2.5 hover:bg-purple-500 hover:text-navy hover:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition cursor-pointer") }}
+        </form>
+    </div>
+
+</div>
+
+<div class="bg-navy-light/90 border border-navy-lighter rounded-2xl p-6 mb-8">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h2 class="flex items-center gap-2 text-lg font-semibold text-white"><span class="w-2.5 h-2.5 rounded-full bg-sky-300"></span> Sleep</h2>
+        {% if current_user.sleep_start_slot is not none and current_user.sleep_end_slot is not none %}
+        <span class="text-xs font-mono text-sky-300 bg-sky-950 border border-sky-800 rounded-full px-3 py-1">
+            Currently {{ '%02d:%02d' % (current_user.sleep_start_slot // 2, (current_user.sleep_start_slot % 2) * 30) }} → {{ '%02d:%02d' % (current_user.sleep_end_slot // 2, (current_user.sleep_end_slot % 2) * 30) }}
+        </span>
+        {% endif %}
+    </div>
+    <form method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        {{ sleep_form.hidden_tag() }}
+        <div>
+            <label class="{{ lbl }}">{{ sleep_form.start_time.label.text }}</label>
+            {{ sleep_form.start_time(class=inp ~ " font-mono") }}
+        </div>
+        <div>
+            <label class="{{ lbl }}">{{ sleep_form.end_time.label.text }}</label>
+            {{ sleep_form.end_time(class=inp ~ " font-mono") }}
+        </div>
+        <div>
+            {{ sleep_form.submit_sleep(class="w-full rounded-lg border-2 border-sky-500 text-sky-400 font-semibold px-5 py-2.5 hover:bg-sky-500 hover:text-navy hover:shadow-[0_0_20px_rgba(14,165,233,0.35)] transition cursor-pointer") }}
+        </div>
+    </form>
+    <p class="text-xs text-gray-500 mt-3">Hidden from your calendar and treated as unavailable time by the scheduler.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <div>
+        <h2 class="text-xl font-bold text-white mb-3">Your recurring commitments</h2>
+        <div class="bg-navy-light/90 border border-navy-lighter rounded-2xl divide-y divide-navy-lighter overflow-hidden">
+            {% for c in commitments %}
+            <div class="flex items-center justify-between gap-3 px-4 py-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="shrink-0 w-12 text-center text-xs font-semibold rounded-md bg-sky-950 text-sky-300 border border-sky-800 py-1">{{ days_short[c.day_of_week] }}</span>
+                    <div class="min-w-0">
+                        <p class="text-white text-sm font-medium truncate">{{ c.label }}</p>
+                        <p class="font-mono text-xs text-gray-500">{{ '%02d:%02d' % (c.start_slot // 2, (c.start_slot % 2) * 30) }} – {{ '%02d:%02d' % (c.end_slot // 2, (c.end_slot % 2) * 30) }}</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ url_for('delete_commitment_group') }}" onsubmit="return confirm('Delete this entire commitment?');">
+                    <input type="hidden" name="day_of_week" value="{{ c.day_of_week }}">
+                    <input type="hidden" name="label" value="{{ c.label }}">
+                    <button type="submit" class="text-gray-500 hover:text-red-400 transition" title="Delete">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M6 4V2h4v2M3 4l1 10h8l1-10"/></svg>
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div class="p-6 text-center text-gray-500 text-sm">Nothing here yet. Add school or tuition above.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div>
+        <h2 class="text-xl font-bold text-white mb-3">Your one-off commitments</h2>
+        <div class="bg-navy-light/90 border border-navy-lighter rounded-2xl divide-y divide-navy-lighter overflow-hidden">
+            {% for o in oneoffs %}
+            <div class="flex items-center justify-between gap-3 px-4 py-3">
+                <div class="min-w-0">
+                    <p class="text-white text-sm font-medium truncate">{{ o.label }}{% if o.subject %} <span class="text-gray-500 font-normal">· {{ o.subject.name }}</span>{% endif %}</p>
+                    <p class="font-mono text-xs text-purple-300">{{ o.date }} <span class="text-gray-500">{{ '%02d:%02d' % (o.start_slot // 2, (o.start_slot % 2) * 30) }} – {{ '%02d:%02d' % (o.end_slot // 2, (o.end_slot % 2) * 30) }}</span></p>
+                </div>
+                <form method="POST" action="{{ url_for('delete_oneoff_group') }}" onsubmit="return confirm('Delete this commitment?');">
+                    <input type="hidden" name="date" value="{{ o.date }}">
+                    <input type="hidden" name="label" value="{{ o.label }}">
+                    <button type="submit" class="text-gray-500 hover:text-red-400 transition" title="Delete">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M6 4V2h4v2M3 4l1 10h8l1-10"/></svg>
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div class="p-6 text-center text-gray-500 text-sm">No one-off events yet.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %} 

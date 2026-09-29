@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}App{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Domine:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">   
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    navy: '#0A0A12',
+                    'navy-light': '#12121C',
+                    'navy-lighter': '#1C1C2B',
+                    yellow: '#FFB627',
+                },
+                fontFamily: {
+                    serif: ['Domine', 'serif'],
+                    sans: ['Inter', 'sans-serif'],
+                    mono: ['JetBrains Mono', 'monospace'],
+                }
+            }
+        }
+    }
+</script>
+<style>
+    body { font-family: 'Inter', sans-serif; font-size: 16px; }
+    h1, h2, h3 { font-family: 'Domine', serif; font-weight: 700; }
+
+    select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23FFB627' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 36px !important;
+    }
+
+    .hexagon {
+        clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    }
+
+    @keyframes pulse-dots { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.55; } }
+    .dot-grid { animation: pulse-dots 6s ease-in-out infinite; }
+
+    input, select, textarea { border-radius: 0.5rem; transition: border-color .15s, box-shadow .15s; color-scheme: dark; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #FFB627; box-shadow: 0 0 0 3px rgba(255,182,39,0.18); }
+
+    .flatpickr-calendar { background: #12121C; border: 1px solid #1C1C2B; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.6); }
+    .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #FFB627; border-color: #FFB627; color: #0A0A12; }
+    .flatpickr-day:hover { background: #1C1C2B; border-color: #1C1C2B; }
+    .flatpickr-day.today { border-color: #FFB627; }
+</style>
+
+</head>
+<body class="bg-navy text-gray-100 min-h-screen">
+    <div class="fixed inset-0 pointer-events-none dot-grid" style="background-image:
+        radial-gradient(circle, #4A4A7A 1.5px, transparent 1.5px),
+        radial-gradient(circle, #6B6BA0 1px, transparent 1px);
+        background-size: 28px 28px, 28px 28px;
+        background-position: 0 0, 14px 14px;">
+    </div>
+    <div class="fixed inset-0 pointer-events-none dot-grid" style="background-image: radial-gradient(circle, #4A4A7A 1.5px, transparent 1.5px); background-size: 28px 28px;"></div>
+    <div class="relative">
+    <nav class="bg-navy-light px-8 py-5 flex items-center justify-between border-b border-navy-lighter">
+        <a href="{{ url_for('dashboard') }}" class="font-serif font-black text-2xl text-white">
+            App<span class="text-yellow">Name</span>
+        </a>
+        {% if current_user.is_authenticated %}
+        <div class="flex items-center gap-6 text-base text-gray-300">
+            <a href="{{ url_for('dashboard') }}" class="hover:text-white">Dashboard</a>
+            <a href="{{ url_for('calendar') }}" class="hover:text-white">Calendar</a>
+            <a href="{{ url_for('commitments') }}" class="hover:text-white">Commitments</a>
+            <a href="{{ url_for('logout') }}" class="hover:text-white">Log Out</a>
+        </div>
+        {% endif %}
+    </nav>
+
+    <main class="px-8 py-8 max-w-7xl mx-auto">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="bg-red-950 border border-red-800 text-red-300 px-4 py-3 mb-4 text-base">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+    <script>
+    document.querySelectorAll('input[type="date"]').forEach(function(el) {
+        flatpickr(el, { dateFormat: 'Y-m-d', altInput: true, altFormat: 'j M Y', disableMobile: true });
+    });
+    document.querySelectorAll('input[type="time"]').forEach(function(el) {
+        flatpickr(el, { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, minuteIncrement: 30, disableMobile: true });
+    });
+
+    function enhanceSelect(select) {
+        if (select.dataset.enhanced) { select._rebuild(); return; }
+        select.dataset.enhanced = '1';
+        select.style.display = 'none';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'relative';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'w-full text-left bg-navy border border-navy-lighter rounded-lg px-3 py-2.5 text-white flex items-center justify-between hover:border-yellow transition';
+        const list = document.createElement('div');
+        list.className = 'hidden absolute z-40 mt-1 w-full max-h-60 overflow-auto bg-navy-light border border-navy-lighter rounded-lg shadow-2xl';
+
+        select.parentNode.insertBefore(wrap, select);
+        wrap.appendChild(btn); wrap.appendChild(list); wrap.appendChild(select);
+
+        function rebuild() {
+            const current = select.options[select.selectedIndex];
+            btn.innerHTML = '<span>' + (current ? current.text : '') + '</span>' +
+                '<svg width="12" height="8" viewBox="0 0 12 8"><path fill="#FFB627" d="M1 1l5 5 5-5"/></svg>';
+            list.innerHTML = '';
+            Array.from(select.options).forEach(function(opt) {
+                const item = document.createElement('div');
+                item.className = 'px-3 py-2 text-sm cursor-pointer hover:bg-navy-lighter ' + (opt.selected ? 'text-yellow' : 'text-gray-200');
+                item.textContent = opt.text;
+                item.onclick = function() {
+                    select.value = opt.value;
+                    select.dispatchEvent(new Event('change'));
+                    rebuild();
+                    list.classList.add('hidden');
+                };
+                list.appendChild(item);
+            });
+        }
+        select._rebuild = rebuild;
+        btn.onclick = function() { list.classList.toggle('hidden'); };
+        document.addEventListener('click', function(e) { if (!wrap.contains(e.target)) list.classList.add('hidden'); });
+        rebuild();
+    }
+    document.querySelectorAll('select.custom-select').forEach(enhanceSelect);
+    </script>
+</body>
+</html>

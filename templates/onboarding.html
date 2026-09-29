@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>Setup Your Profile</title></head>
+<body>
+    <h1>Let's set up your profile</h1>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <p style="color:red;">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <p>{{ form.class_level.label }} {{ form.class_level() }}</p>
+
+        <p>{{ form.subjects.label }}</p>
+        {{ form.subjects() }}
+
+        {{ form.submit() }}
+    </form>
+</body>
+</html>
