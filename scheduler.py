@@ -4,16 +4,22 @@ from models import db, Task, FixedCommitment, ScheduledSlot, OneOffCommitment, U
 TOTAL_SLOTS_PER_DAY = 48
 RECOMPUTE_WINDOW_DAYS = 7
 
+def get_sleep_slots(user):
+    s, e = user.sleep_start_slot, user.sleep_end_slot
+    if s is None or e is None or s == e:
+        return set()
+    if s < e:
+        return set(range(s, e))
+    return set(range(s, TOTAL_SLOTS_PER_DAY)) | set(range(0, e))
+
+
 
 def get_free_slots(user_id, target_date):
-    """Return a list of slot numbers (0-47) that are free on this date."""
     day_of_week = target_date.weekday()
     occupied = set()
 
     user = User.query.get(user_id)
-    if user.sleep_start_slot is not None and user.sleep_end_slot is not None:
-        for slot in range(user.sleep_start_slot, user.sleep_end_slot):
-            occupied.add(slot)
+    occupied |= get_sleep_slots(user)
 
     fixed = FixedCommitment.query.filter_by(user_id=user_id, day_of_week=day_of_week).all()
     for f in fixed:

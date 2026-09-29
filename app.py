@@ -3,9 +3,9 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from config import Config
 from models import db, User, Task, Subject, Chapter, FixedCommitment, OneOffCommitment, ScheduledSlot
 from forms import SignupForm, LoginForm, TaskForm, OnboardingForm, FixedCommitmentForm, OneOffCommitmentForm, SleepForm
-from scheduler import run_scheduler
+from scheduler import run_scheduler, get_sleep_slots
 from flask_migrate import Migrate
-from datetime import date, timedelta
+from datetime import date, timedelta, time
 from sqlalchemy import case
 
 app = Flask(__name__)
@@ -277,6 +277,10 @@ def time_to_slot_end(t):
     total_minutes = t.hour * 60 + t.minute
     return (total_minutes + 29) // 30
 
+def slot_to_time(slot):
+    slot = slot % 48
+    return time(hour=slot // 2, minute=(slot % 2) * 30)
+
 def deadline_urgency_class(deadline):
     if not deadline:
         return 'text-gray-400'
@@ -371,21 +375,20 @@ def commitments():
 
 
     sleep_form = SleepForm()
-    if current_user.sleep_start_slot is not None:
-        sleep_form.start_time.data = None  # TimeField pre-fill from slot number needs a small helper, see below
+    if request.method == 'GET' and current_user.sleep_start_slot is not None:
+        sleep_form.start_time.data = slot_to_time(current_user.sleep_start_slot)
+        sleep_form.end_time.data = slot_to_time(current_user.sleep_end_slot)
 
     if sleep_form.submit_sleep.data and sleep_form.validate_on_submit():
         current_user.sleep_start_slot = time_to_slot(sleep_form.start_time.data)
-        current_user.sleep_end_slot = time_to_slot_end(sleep_form.end_time.data)
+        current_user.sleep_end_slot = time_to_slot_end(sleep_form.end_time.data) % 48
         db.session.commit()
-
         unfit = run_scheduler(current_user.id)
         if unfit:
             names = ', '.join([t.subject.name if t.subject else t.custom_subject for t in unfit])
-            flash(f"Warning: Sleep Schedule saved but could not schedule: {names}")
+            flash(f"Sleep schedule saved, but could not schedule: {names}")
         else:
             flash('Sleep schedule saved!')
-
         return redirect(url_for('commitments'))
 
     return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form,sleep_form= sleep_form,
@@ -520,21 +523,19 @@ def calendar(week_offset=0):
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     week_dates = [start_of_week + timedelta(days=i) for i in range(7)]
     user = User.query.get(current_user.id)
-    Visible_Slot_Start = user.sleep_end_slot if user.sleep_end_slot is not None else 0
-    Visible_Slot_End = 48
 
-    raw_grid = {}
-    for slot in range(48):
-        raw_grid[slot] = {}
-        for day_index in range(7):
-            raw_grid[slot][day_index] = None
+    sleep_set = get_sleep_slots(user)
+    visible_slots = [s for s in range(48) if s not in sleep_set]
+    visible_set = set(visible_slots)
+
+    raw_grid = {slot: {d: None for d in range(7)} for slot in range(48)}
 
     for day_index, day_date in enumerate(week_dates):
         day_of_week = day_date.weekday()
 
         fixed = FixedCommitment.query.filter_by(user_id=current_user.id, day_of_week=day_of_week).all()
         for f in fixed:
-            raw_grid[f.slot_number][day_index] = {'label': f.label, 'type': 'fixed'}
+            raw_grid[f.slot_number][day_index] = {'label': f.label, 'type': 'fixed', 'color': getattr(f, 'color', None)}
 
         scheduled = ScheduledSlot.query.filter_by(user_id=current_user.id, date=day_date).all()
         for s in scheduled:
@@ -542,46 +543,37 @@ def calendar(week_offset=0):
             display_name = task.subject.name if task.subject else task.custom_subject
             chapter_name = task.chapter.name if task.chapter else (task.custom_chapter or '—')
             raw_grid[s.slot_number][day_index] = {
-                'label': display_name, 
-                'type': 'task',
-                'task_id': task.id,
+                'label': display_name, 'type': 'task', 'task_id': task.id,
                 'chapter': chapter_name,
                 'deadline': str(task.deadline) if task.deadline else 'No deadline',
-                'difficulty': task.difficulty,
-                'time_required': task.time_required,
-                'completed': task.completed,}
+                'difficulty': task.difficulty, 'time_required': task.time_required,
+                'completed': task.completed,
+            }
 
         one_off = OneOffCommitment.query.filter_by(user_id=current_user.id, date=day_date).all()
         for o in one_off:
-            raw_grid[o.slot_number][day_index] = {'label': o.label, 'type': 'oneoff'}
+            raw_grid[o.slot_number][day_index] = {'label': o.label, 'type': 'oneoff', 'color': getattr(o, 'color', None)}
 
-    # Build render grid: merge consecutive identical cells per day into spans
     render_grid = {}
     skip = set()
     for day_index in range(7):
-        slot = Visible_Slot_Start
-        while slot < Visible_Slot_End:
+        for slot in visible_slots:
             if (slot, day_index) in skip:
-                slot += 1
                 continue
             cell = raw_grid[slot][day_index]
             if cell is None:
                 render_grid[(slot, day_index)] = None
-                slot += 1
                 continue
             span = 1
-            while (slot + span < Visible_Slot_End and raw_grid[slot + span][day_index] is not None
+            while ((slot + span) in visible_set and raw_grid[slot + span][day_index] is not None
                    and raw_grid[slot + span][day_index]['label'] == cell['label']
                    and raw_grid[slot + span][day_index]['type'] == cell['type']):
                 skip.add((slot + span, day_index))
                 span += 1
             render_grid[(slot, day_index)] = {**cell, 'span': span}
-            slot += 1
 
     return render_template('calendar.html', render_grid=render_grid, week_dates=week_dates,
-                            week_offset=week_offset, today=today,
-                            visible_start=Visible_Slot_Start, visible_end=Visible_Slot_End)
-
+                            week_offset=week_offset, today=today, visible_slots=visible_slots)
 
 if __name__== '__main__':
     app.run(debug=True)
