@@ -1,97 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>{% block title %}App{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Yetra{% endblock %}</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Domine:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">   
+    <link href="https://fonts.googleapis.com/css2?family=Domine:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    navy: '#0A0A12',
-                    'navy-light': '#12121C',
-                    'navy-lighter': '#1C1C2B',
-                    yellow: '#FFB627',
-                },
-                fontFamily: {
-                    serif: ['Domine', 'serif'],
-                    sans: ['Inter', 'sans-serif'],
-                    mono: ['JetBrains Mono', 'monospace'],
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: '#0A0A12',
+                        'navy-light': '#12121C',
+                        'navy-lighter': '#1C1C2B',
+                        yellow: '#FFB627',
+                    },
+                    fontFamily: {
+                        serif: ['Domine', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
                 }
             }
         }
-    }
-</script>
-<style>
-    body { font-family: 'Inter', sans-serif; font-size: 16px; }
-    h1, h2, h3 { font-family: 'Domine', serif; font-weight: 700; }
+    </script>
 
-    select {
-        appearance: none;
-        -webkit-appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23FFB627' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 12px center;
-        padding-right: 36px !important;
-    }
+    <style>
+        body { font-family: 'Inter', sans-serif; font-size: 16px; }
+        h1, h2, h3 { font-family: 'Domine', serif; font-weight: 700; }
 
-    .hexagon {
-        clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-    }
+        @keyframes node-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,182,39,0.5); } 50% { box-shadow: 0 0 0 8px rgba(255,182,39,0); } }
+        .node-pulse { animation: node-pulse 2.4s ease-in-out infinite; }
 
-    @keyframes pulse-dots { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.55; } }
-    .dot-grid { animation: pulse-dots 6s ease-in-out infinite; }
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23FFB627' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px !important;
+        }
 
-    input, select, textarea { border-radius: 0.5rem; transition: border-color .15s, box-shadow .15s; color-scheme: dark; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: #FFB627; box-shadow: 0 0 0 3px rgba(255,182,39,0.18); }
+        input, select, textarea { border-radius: 0.5rem; transition: border-color .15s, box-shadow .15s; color-scheme: dark; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #FFB627; box-shadow: 0 0 0 3px rgba(255,182,39,0.18); }
 
-    .flatpickr-calendar { background: #12121C; border: 1px solid #1C1C2B; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.6); }
-    .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #FFB627; border-color: #FFB627; color: #0A0A12; }
-    .flatpickr-day:hover { background: #1C1C2B; border-color: #1C1C2B; }
-    .flatpickr-day.today { border-color: #FFB627; }
-</style>
+        .flatpickr-calendar { background: #12121C; border: 1px solid #1C1C2B; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.6); }
+        .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #FFB627; border-color: #FFB627; color: #0A0A12; }
+        .flatpickr-day:hover { background: #1C1C2B; border-color: #1C1C2B; }
+        .flatpickr-day.today { border-color: #FFB627; }
 
+        @keyframes pulse-dots { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.55; } }
+        @keyframes drift-dots { 0% { background-position: 0 0, 14px 14px; } 100% { background-position: 28px 28px, 42px 42px; } }
+        .dot-grid { animation: pulse-dots 6s ease-in-out infinite, drift-dots 40s linear infinite; }
+    </style>
 </head>
 <body class="bg-navy text-gray-100 min-h-screen">
+
+    <div class="fixed inset-0 pointer-events-none" style="background:
+        radial-gradient(ellipse 800px 600px at 15% 10%, rgba(255,182,39,0.06), transparent 60%),
+        radial-gradient(ellipse 900px 700px at 90% 80%, rgba(74,74,122,0.15), transparent 60%);"></div>
     <div class="fixed inset-0 pointer-events-none dot-grid" style="background-image:
         radial-gradient(circle, #4A4A7A 1.5px, transparent 1.5px),
         radial-gradient(circle, #6B6BA0 1px, transparent 1px);
         background-size: 28px 28px, 28px 28px;
-        background-position: 0 0, 14px 14px;">
-    </div>
-    <div class="fixed inset-0 pointer-events-none dot-grid" style="background-image: radial-gradient(circle, #4A4A7A 1.5px, transparent 1.5px); background-size: 28px 28px;"></div>
+        background-position: 0 0, 14px 14px;"></div>
+
     <div class="relative">
-    <nav class="bg-navy-light px-8 py-5 flex items-center justify-between border-b border-navy-lighter">
-        <a href="{{ url_for('dashboard') }}" class="font-serif font-black text-2xl text-white">
-            App<span class="text-yellow">Name</span>
-        </a>
-        {% if current_user.is_authenticated %}
-        <div class="flex items-center gap-6 text-base text-gray-300">
-            <a href="{{ url_for('dashboard') }}" class="hover:text-white">Dashboard</a>
-            <a href="{{ url_for('calendar') }}" class="hover:text-white">Calendar</a>
-            <a href="{{ url_for('commitments') }}" class="hover:text-white">Commitments</a>
-            <a href="{{ url_for('logout') }}" class="hover:text-white">Log Out</a>
-        </div>
-        {% endif %}
-    </nav>
+        <nav class="bg-navy-light/90 backdrop-blur border-b border-navy-lighter">
+            <div class="px-4 sm:px-8 py-4 flex items-center justify-between">
+                <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('home') }}" class="flex items-center gap-2.5">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <path d="M4 23 C10 23, 8 14, 14 14 S18 5, 24 5" stroke="#FFB627" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="4" cy="23" r="2" fill="#0A0A12" stroke="#FFB627" stroke-width="1.5"/>
+                        <circle cx="24" cy="5" r="3" fill="#FFB627"/>
+                    </svg>
+                    <span class="font-serif font-bold text-2xl text-white tracking-tight">Yetra</span>
+                </a>
 
-    <main class="px-8 py-8 max-w-7xl mx-auto">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="bg-red-950 border border-red-800 text-red-300 px-4 py-3 mb-4 text-base">{{ message }}</div>
-                {% endfor %}
+                {% if current_user.is_authenticated %}
+                <div class="hidden md:flex items-center gap-6 text-base text-gray-300">
+                    <a href="{{ url_for('dashboard') }}" class="hover:text-white">Dashboard</a>
+                    <a href="{{ url_for('calendar') }}" class="hover:text-white">Calendar</a>
+                    <a href="{{ url_for('commitments') }}" class="hover:text-white">Commitments</a>
+                    <a href="{{ url_for('logout') }}" class="hover:text-white">Log Out</a>
+                </div>
+                <button class="md:hidden text-gray-300 hover:text-yellow" aria-label="Menu"
+                        onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+                </button>
+                {% else %}
+                <div class="flex items-center gap-4 text-sm">
+                    <a href="{{ url_for('login') }}" class="text-gray-300 hover:text-white">Log in</a>
+                    <a href="{{ url_for('signup') }}" class="rounded-lg bg-yellow text-navy font-semibold px-4 py-2 hover:shadow-[0_0_20px_rgba(255,182,39,0.4)] transition-shadow">Sign up</a>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if current_user.is_authenticated %}
+            <div id="mobile-menu" class="hidden md:hidden border-t border-navy-lighter px-4 py-3 flex flex-col gap-1 text-gray-200">
+                <a href="{{ url_for('dashboard') }}" class="py-2.5 hover:text-yellow">Dashboard</a>
+                <a href="{{ url_for('calendar') }}" class="py-2.5 hover:text-yellow">Calendar</a>
+                <a href="{{ url_for('commitments') }}" class="py-2.5 hover:text-yellow">Commitments</a>
+                <a href="{{ url_for('logout') }}" class="py-2.5 hover:text-yellow">Log Out</a>
+            </div>
             {% endif %}
-        {% endwith %}
+        </nav>
+        <main class="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if category == 'reward' %}
+                        <div class="bg-yellow/10 border border-yellow/40 text-yellow px-4 py-3 rounded-lg mb-4 text-base">{{ message }}</div>
+                        {% else %}
+                        <div class="bg-red-950 border border-red-800 text-red-300 px-4 py-3 rounded-lg mb-4 text-base">{{ message }}</div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
-        {% block content %}{% endblock %}
-    </main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
     <script>
     document.querySelectorAll('input[type="date"]').forEach(function(el) {
         flatpickr(el, { dateFormat: 'Y-m-d', altInput: true, altFormat: 'j M Y', disableMobile: true });

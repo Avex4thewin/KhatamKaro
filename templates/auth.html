@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Yetra: plan the journey, not just the tasks{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[72vh]">
+
+    <div>
+        <p class="text-yellow text-xs uppercase tracking-widest mb-4">यात्रा · Free, built by a student</p>
+        <h1 class="text-5xl lg:text-6xl font-serif font-bold text-white leading-[1.1] mb-5">
+            Every week<br>is a journey.<br><span class="text-yellow">Plan it.</span>
+        </h1>
+        <p class="text-gray-400 text-lg mb-8 max-w-md">
+            Tell Yetra what already fills your week and what you need to get done. It finds the real gaps and places your work in them, and re-plans the moment something changes.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mb-8">
+            <div class="bg-navy-light/80 border border-navy-lighter rounded-xl p-4">
+                <p class="text-white font-semibold text-sm mb-1">For ISC students</p>
+                <p class="text-gray-500 text-xs leading-relaxed">Real syllabus chapters, difficulty-aware planning, built around board prep.</p>
+            </div>
+            <div class="bg-navy-light/80 border border-navy-lighter rounded-xl p-4">
+                <p class="text-white font-semibold text-sm mb-1">For everyone else</p>
+                <p class="text-gray-500 text-xs leading-relaxed">Your own subjects, projects or routines. No fixed syllabus needed.</p>
+            </div>
+        </div>
+
+        <ul class="space-y-2 text-sm text-gray-400">
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow"></span> Schedules around school, tuition, sleep and one-off plans</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow"></span> Splits big tasks across days so they actually fit</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-yellow"></span> Re-plans automatically when your week changes</li>
+        </ul>
+    </div>
+
+    <div class="bg-navy-light/90 border border-navy-lighter rounded-2xl p-8 w-full max-w-md justify-self-center shadow-[0_0_60px_rgba(255,182,39,0.06)]">
+        <h2 class="text-2xl font-bold text-white mb-1">{{ "Welcome back" if form_type == "login" else "Start your journey" }}</h2>
+        <p class="text-sm text-gray-400 mb-6">{{ "Log in to see your week." if form_type == "login" else "Takes about a minute." }}</p>
+
+        <form method="POST" class="space-y-4">
+            {{ form.hidden_tag() }}
+            {% for field in form if field.name not in ['csrf_token', 'submit'] %}
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">{{ field.label.text }}</label>
+                {{ field(class="w-full bg-navy border border-navy-lighter rounded-lg px-3 py-2.5 text-white") }}
+                {% for err in field.errors %}<p class="text-red-400 text-xs mt-1">{{ err }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+            {{ form.submit(class="w-full rounded-lg bg-yellow text-navy font-semibold py-2.5 hover:shadow-[0_0_24px_rgba(255,182,39,0.45)] transition-shadow cursor-pointer") }}
+        </form>
+
+        <p class="text-sm text-gray-500 mt-6 text-center">
+            {% if form_type == "login" %}
+                New to Yetra? <a href="{{ url_for('signup') }}" class="text-yellow hover:underline">Create an account</a>
+            {% else %}
+                Already on Yetra? <a href="{{ url_for('login') }}" class="text-yellow hover:underline">Log in</a>
+            {% endif %}
+        </p>
+    </div>
+
+</div>
+
+{% endblock %}

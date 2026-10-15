@@ -1,25 +1,65 @@
-<!DOCTYPE html>
-<html>
-<head><title>Setup Your Profile</title></head>
-<body>
-    <h1>Let's set up your profile</h1>
+{% extends "base.html" %}
+{% block title %}Set up your profile{% endblock %}
+{% block content %}
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <p style="color:red;">{{ message }}</p>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+<div class="max-w-2xl mx-auto">
+    <p class="text-yellow text-xs uppercase tracking-widest mb-2">One quick step</p>
+    <h1 class="text-4xl font-bold text-white mb-2">Let's set up your journey</h1>
+    <p class="text-gray-400 mb-8">Tell Yetra how you work so it can set things up properly.</p>
 
-    <form method="POST">
-        {{ form.hidden_tag() }}
-        <p>{{ form.class_level.label }} {{ form.class_level() }}</p>
+    <div class="bg-navy-light/90 border border-navy-lighter rounded-2xl p-8">
+        <form method="POST" class="space-y-6">
+            {{ form.hidden_tag() }}
 
-        <p>{{ form.subjects.label }}</p>
-        {{ form.subjects() }}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {% for opt in form.user_type %}
+                <label class="cursor-pointer">
+                    {{ opt(class="peer sr-only") }}
+                    <span class="block rounded-xl border border-navy-lighter p-4 text-sm text-gray-300 transition peer-checked:border-yellow peer-checked:bg-yellow/10 peer-checked:text-white hover:border-yellow">
+                        {{ opt.label.text }}
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
 
-        {{ form.submit() }}
-    </form>
-</body>
-</html>
+            <div id="isc-fields" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">{{ form.class_level.label.text }}</label>
+                    {{ form.class_level(class="custom-select w-full bg-navy border border-navy-lighter rounded-lg px-3 py-2.5 text-white") }}
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{{ form.subjects.label.text }}</label>
+                    <div class="flex flex-wrap gap-2">
+                        {% for sub in form.subjects %}
+                        <label class="cursor-pointer">
+                            {{ sub(class="peer sr-only") }}
+                            <span class="block px-3.5 py-2 rounded-lg border border-navy-lighter text-sm text-gray-300 transition peer-checked:bg-yellow peer-checked:text-navy peer-checked:border-yellow peer-checked:font-semibold hover:border-yellow">{{ sub.label.text }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <p id="general-note" class="hidden text-sm text-gray-400">
+                No syllabus needed. You'll type your own subject and chapter names when you add tasks.
+            </p>
+
+            {{ form.submit(class="rounded-lg bg-yellow text-navy font-semibold px-6 py-2.5 hover:shadow-[0_0_24px_rgba(255,182,39,0.45)] transition-shadow cursor-pointer") }}
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleType() {
+        const isc = document.querySelector('input[name="user_type"]:checked').value === 'isc';
+        document.getElementById('isc-fields').classList.toggle('hidden', !isc);
+        document.getElementById('general-note').classList.toggle('hidden', isc);
+    }
+    document.querySelectorAll('input[name="user_type"]').forEach(function(r) {
+        r.addEventListener('change', toggleType);
+    });
+    toggleType();
+</script>
+
+{% endblock %}

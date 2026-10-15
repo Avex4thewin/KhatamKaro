@@ -5,8 +5,10 @@ from models import db, User, Task, Subject, Chapter, FixedCommitment, OneOffComm
 from forms import SignupForm, LoginForm, TaskForm, OnboardingForm, FixedCommitmentForm, OneOffCommitmentForm, SleepForm
 from scheduler import run_scheduler, get_sleep_slots
 from flask_migrate import Migrate
-from datetime import date, timedelta, time
+from datetime import date, timedelta, time, datetime
 from sqlalchemy import case
+from gamification import award_completion, revoke_completion, build_profile
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -18,24 +20,42 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view='login'
 
+def greeting_for_now():
+    h = datetime.now().hour
+    if h < 5:
+        return 'Still up'
+    if h < 12:
+        return 'Good morning'
+    if h < 17:
+        return 'Good afternoon'
+    if h < 22:
+        return 'Good evening'
+    return 'Late night'
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('signup'))
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
     form = SignupForm()
     if form.validate_on_submit():
-        existing_user = User.query.filter_by(username = form.username.data).first()
+        existing_user = User.query.filter_by(username=form.username.data).first()
         if existing_user:
             flash('That username is already taken.')
             return redirect(url_for('signup'))
 
-        new_user = User(username = form.username.data)
+        new_user = User(username=form.username.data)
         new_user.set_password(form.password.data)
         db.session.add(new_user)
         db.session.commit()
@@ -43,40 +63,45 @@ def signup():
         flash('Account created! Please log in.')
         return redirect(url_for('login'))
 
-    return render_template('signup.html', form=form)
+    return render_template('auth.html', form=form, form_type='signup')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.check_password(form.password.data):
             login_user(user)
-            if user.class_level is None:
+            if user.user_type is None and user.class_level is None:
                 return redirect(url_for('onboarding'))
             return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid username or password.')
+        flash('Invalid username or password.')
 
-    return render_template('login.html', form=form)
+    return render_template('auth.html', form=form, form_type='login')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
     sort_by = request.args.get('sort', 'deadline')
-
     query = Task.query.filter_by(user_id=current_user.id)
 
     if sort_by == 'subject':
         query = query.outerjoin(Subject, Task.subject_id == Subject.id).order_by(
-            case((Task.subject_id != None, Subject.name), else_=Task.custom_subject)
-        )
+            case((Task.subject_id != None, Subject.name), else_=Task.custom_subject))
     elif sort_by == 'chapter':
         query = query.outerjoin(Chapter, Task.chapter_id == Chapter.id).order_by(
-            case((Task.chapter_id != None, Chapter.name), else_=Task.custom_chapter)
-        )
-    elif sort_by == 'task_type':
-        query = query.order_by(Task.task_type)
+            case((Task.chapter_id != None, Chapter.name), else_=Task.custom_chapter))
     elif sort_by == 'difficulty':
         query = query.order_by(Task.difficulty)
     elif sort_by == 'time_required':
@@ -85,17 +110,15 @@ def dashboard():
         query = query.order_by(Task.deadline)
 
     tasks = query.all()
-
     pending_tasks = [t for t in tasks if not t.completed]
     completed_count = len([t for t in tasks if t.completed])
     due_soon_count = len([t for t in pending_tasks if t.deadline and (t.deadline - date.today()).days <= 3])
     next_task = min(pending_tasks, key=lambda t: t.deadline or date.max) if pending_tasks else None
 
-    return render_template('dashboard.html', tasks=tasks, current_sort=sort_by,
-                            pending_count=len(pending_tasks),
-                            completed_count=completed_count,
-                            due_soon_count=due_soon_count,
-                            next_task=next_task)
+    return render_template('dashboard.html', tasks=tasks, current_sort=sort_by, first_name=current_user.username.split()[0],
+                            pending_count=len(pending_tasks), completed_count=completed_count, greeting=greeting_for_now(),
+                            due_soon_count=due_soon_count, next_task=next_task,
+                            profile=build_profile(current_user))
 
 @app.route('/task/new', methods=['GET', 'POST'])
 @login_required
@@ -210,23 +233,26 @@ def edit_task(task_id):
 @login_required
 def complete_task(task_id):
     task = Task.query.get_or_404(task_id)
-
-
     if task.user_id != current_user.id:
         flash("You don't have permission to modify that task.")
         return redirect(url_for('dashboard'))
 
     task.completed = not task.completed
+    if task.completed:
+        events = award_completion(current_user, task)
+    else:
+        revoke_completion(current_user, task)
+        events = []
     db.session.commit()
+
     unfit = run_scheduler(current_user.id)
     if unfit:
         names = ', '.join([t.subject.name if t.subject else t.custom_subject for t in unfit])
         flash(f"Warning: could not schedule: {names}")
-    else:
-        flash('Task added and scheduled!')
+    for e in events:
+        flash(e, 'reward')
 
     return redirect(url_for('dashboard'))
-
 
 @app.route('/task/<int:task_id>/delete', methods=['POST'])
 @login_required
@@ -249,26 +275,23 @@ def onboarding():
     form.subjects.choices = [(s.id, s.name) for s in Subject.query.order_by(Subject.name).all()]
 
     if form.validate_on_submit():
-        if not form.subjects.data:
-            flash('Please select at least one subject.')
-            return render_template('onboarding.html', form=form)    
-
-        current_user.class_level = int(form.class_level.data)
-
-        selected_subjects = Subject.query.filter(Subject.id.in_(form.subjects.data)).all()
-        current_user.subjects = selected_subjects
+        if form.user_type.data == 'isc':
+            if not form.subjects.data:
+                flash('Pick at least one subject, or choose the other option.')
+                return render_template('onboarding.html', form=form)
+            current_user.user_type = 'isc'
+            current_user.class_level = int(form.class_level.data)
+            current_user.subjects = Subject.query.filter(Subject.id.in_(form.subjects.data)).all()
+        else:
+            current_user.user_type = 'general'
+            current_user.class_level = None
+            current_user.subjects = []
 
         db.session.commit()
         flash('Setup complete!')
         return redirect(url_for('dashboard'))
 
-    return render_template('onboarding.html', form=form)               
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('home'))
+    return render_template('onboarding.html', form=form)
 
 def time_to_slot(t):
     return (t.hour * 2) + (1 if t.minute >= 30 else 0)
@@ -307,18 +330,24 @@ def commitments():
     oneoff_form = OneOffCommitmentForm()
     oneoff_form.subject_id.choices = [(0, '-- None --')] + [(s.id, s.name) for s in current_user.subjects]
 
+    sleep_form = SleepForm()
+    if request.method == 'GET' and current_user.sleep_start_slot is not None:
+        sleep_form.start_time.data = slot_to_time(current_user.sleep_start_slot)
+        sleep_form.end_time.data = slot_to_time(current_user.sleep_end_slot)
+
     if fixed_form.submit_fixed.data and fixed_form.validate_on_submit():
         if not fixed_form.days.data:
             flash('Please select at least one day.')
-            return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form,
+            return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form, sleep_form=sleep_form,
                                     commitments=get_grouped_commitments(), oneoffs=get_grouped_oneoffs())
 
         start_slot = time_to_slot(fixed_form.start_time.data)
         end_slot = time_to_slot_end(fixed_form.end_time.data)
+        color = fixed_form.color.data or None
 
         if end_slot <= start_slot:
             flash('End time must be after start time.')
-            return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form,
+            return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form, sleep_form=sleep_form,
                                     commitments=get_grouped_commitments(), oneoffs=get_grouped_oneoffs())
 
         for day_str in fixed_form.days.data:
@@ -328,7 +357,8 @@ def commitments():
                     user_id=current_user.id,
                     day_of_week=day,
                     slot_number=slot,
-                    label=fixed_form.label.data
+                    label=fixed_form.label.data,
+                    color=color
                 )
                 db.session.add(entry)
 
@@ -345,10 +375,11 @@ def commitments():
     if oneoff_form.submit_oneoff.data and oneoff_form.validate_on_submit():
         start_slot = time_to_slot(oneoff_form.start_time.data)
         end_slot = time_to_slot_end(oneoff_form.end_time.data)
+        color = oneoff_form.color.data or None
 
         if end_slot <= start_slot:
             flash('End time must be after start time.')
-            return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form,
+            return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form, sleep_form=sleep_form,
                                     commitments=get_grouped_commitments(), oneoffs=get_grouped_oneoffs())
 
         subject_id = oneoff_form.subject_id.data if oneoff_form.subject_id.data != 0 else None
@@ -359,7 +390,8 @@ def commitments():
                 date=oneoff_form.date.data,
                 slot_number=slot,
                 label=oneoff_form.label.data,
-                subject_id=subject_id
+                subject_id=subject_id,
+                color=color
             )
             db.session.add(entry)
 
@@ -373,12 +405,6 @@ def commitments():
 
         return redirect(url_for('commitments'))
 
-
-    sleep_form = SleepForm()
-    if request.method == 'GET' and current_user.sleep_start_slot is not None:
-        sleep_form.start_time.data = slot_to_time(current_user.sleep_start_slot)
-        sleep_form.end_time.data = slot_to_time(current_user.sleep_end_slot)
-
     if sleep_form.submit_sleep.data and sleep_form.validate_on_submit():
         current_user.sleep_start_slot = time_to_slot(sleep_form.start_time.data)
         current_user.sleep_end_slot = time_to_slot_end(sleep_form.end_time.data) % 48
@@ -391,7 +417,7 @@ def commitments():
             flash('Sleep schedule saved!')
         return redirect(url_for('commitments'))
 
-    return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form,sleep_form= sleep_form,
+    return render_template('commitments.html', fixed_form=fixed_form, oneoff_form=oneoff_form, sleep_form=sleep_form,
                             commitments=get_grouped_commitments(), oneoffs=get_grouped_oneoffs())
 
 
@@ -403,7 +429,7 @@ def get_grouped_oneoffs():
     for o in all_oneoffs:
         key = (o.date, o.label)
         if key not in groups:
-            groups[key] = {'date': o.date, 'label': o.label, 'subject': o.subject, 'slots': []}
+            groups[key] = {'date': o.date, 'label': o.label,  'color': o.color, 'subject': o.subject, 'slots': []}
         groups[key]['slots'].append(o.slot_number)
 
     result = []
@@ -429,7 +455,7 @@ def get_grouped_commitments():
     for c in all_commitments:
         key = (c.day_of_week, c.label)
         if key not in groups:
-            groups[key] = {'day_of_week': c.day_of_week, 'label': c.label, 'slots': []}
+            groups[key] = {'day_of_week': c.day_of_week, 'label': c.label,  'color': c.color, 'slots': []}
         groups[key]['slots'].append(c.slot_number)
 
     result = []

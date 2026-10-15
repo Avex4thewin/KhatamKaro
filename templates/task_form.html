@@ -18,7 +18,7 @@
                 <div>
                     <label class="{{ lbl }}">{{ form.subject_id.label.text }}</label>
                     {{ form.subject_id(id="subject_id", class="custom-select " ~ inp, onchange="updatePreview()") }}
-                    <details class="mt-1.5">
+                    <details class="mt-1.5" {% if not current_user.subjects %}open{% endif %}>
                         <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300">Not in the list? Type your own</summary>
                         <div class="mt-2">{{ form.custom_subject(class=inp ~ " text-sm", oninput="updatePreview()") }}</div>
                     </details>
@@ -26,7 +26,7 @@
                 <div>
                     <label class="{{ lbl }}">{{ form.chapter_id.label.text }}</label>
                     {{ form.chapter_id(id="chapter_id", class="custom-select " ~ inp, onchange="updatePreview()") }}
-                    <details class="mt-1.5">
+                    <details class="mt-1.5" {% if not current_user.subjects %}open{% endif %}>
                         <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300">Not in the list? Type your own</summary>
                         <div class="mt-2">{{ form.custom_chapter(class=inp ~ " text-sm", oninput="updatePreview()") }}</div>
                     </details>

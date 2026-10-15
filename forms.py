@@ -1,15 +1,19 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, IntegerField, DateField, SelectField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange, Optional
-from wtforms import SelectMultipleField, widgets
+from wtforms import SelectMultipleField, widgets, RadioField, TimeField
 
 class OnboardingForm(FlaskForm):
-    class_level = SelectField('Class', choices=[('11', 'Class 11'), ('12', 'Class 12')], validators=[DataRequired()])
+    user_type = RadioField('I am', choices=[
+        ('isc', 'An ISC student (Class 11 or 12)'),
+        ('general', 'Tracking my own subjects or projects'),
+    ], default='isc')
+    class_level = SelectField('Class', choices=[('11', 'Class 11'), ('12', 'Class 12')], validators=[Optional()])
     subjects = SelectMultipleField(
         'Your Subjects',
         coerce=int,
         option_widget=widgets.CheckboxInput(),
-        widget=widgets.ListWidget(prefix_label=False),
+        widget=widgets.ListWidget(prefix_label=False)
     )
     submit = SubmitField('Continue')
     
@@ -50,7 +54,9 @@ class FixedCommitmentForm(FlaskForm):
     )
     start_time = TimeField('Start time', validators=[DataRequired()])
     end_time = TimeField('End time', validators=[DataRequired()])
+    color = StringField('Color', validators=[Optional()])
     submit_fixed = SubmitField('Add Commitment')
+    
 
 class SleepForm(FlaskForm):
     start_time = TimeField('Sleep time', validators=[DataRequired()])
@@ -63,4 +69,5 @@ class OneOffCommitmentForm(FlaskForm):
     start_time = TimeField('Start time', validators=[DataRequired()])
     end_time = TimeField('End time', validators=[DataRequired()])
     subject_id = SelectField('Related subject (optional)', coerce=int, validators=[Optional()])
+    color = StringField('Color', validators=[Optional()])
     submit_oneoff = SubmitField('Add One-Off Commitment')
