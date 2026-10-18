@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Yetra: plan the journey, not just the tasks{% endblock %}
+{% block title %}Tymora: plan the journey, not just the tasks{% endblock %}
 {% block content %}
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[72vh]">
@@ -10,7 +10,7 @@
             Every week<br>is a journey.<br><span class="text-yellow">Plan it.</span>
         </h1>
         <p class="text-gray-400 text-lg mb-8 max-w-md">
-            Tell Yetra what already fills your week and what you need to get done. It finds the real gaps and places your work in them, and re-plans the moment something changes.
+            Tell Tymora what already fills your week and what you need to get done. It finds the real gaps and places your work in them, and re-plans the moment something changes.
         </p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mb-8">
@@ -49,7 +49,7 @@
             <div>
                 <label class="flex items-start gap-3 text-sm text-gray-400 cursor-pointer">
                     {{ form.agree(class="mt-1 w-4 h-4 accent-[#FFB627]") }}
-                    <span>I agree to the <a href="{{ url_for('legal') }}#terms" target="_blank" class="text-yellow hover:underline">Terms</a> and <a href="{{ url_for('legal') }}#privacy" target="_blank" class="text-yellow hover:underline">Privacy Policy</a>. If I'm under 18, a parent or guardian knows I'm using Yetra.</span>
+                    <span>I agree to the <a href="{{ url_for('legal') }}#terms" target="_blank" class="text-yellow hover:underline">Terms</a> and <a href="{{ url_for('legal') }}#privacy" target="_blank" class="text-yellow hover:underline">Privacy Policy</a>. If I'm under 18, a parent or guardian knows I'm using Tymora.</span>
                 </label>
                 {% for err in form.agree.errors %}<p class="text-red-400 text-xs mt-1">{{ err }}</p>{% endfor %}
             </div>
@@ -59,9 +59,9 @@
 
         <p class="text-sm text-gray-500 mt-6 text-center">
             {% if form_type == "login" %}
-                New to Yetra? <a href="{{ url_for('signup') }}" class="text-yellow hover:underline">Create an account</a>
+                New to Tymora? <a href="{{ url_for('signup') }}" class="text-yellow hover:underline">Create an account</a>
             {% else %}
-                Already on Yetra? <a href="{{ url_for('login') }}" class="text-yellow hover:underline">Log in</a>
+                Already on Tymora? <a href="{{ url_for('login') }}" class="text-yellow hover:underline">Log in</a>
             {% endif %}
         </p>
         <p class="text-sm text-gray-500 mt-6 text-center">

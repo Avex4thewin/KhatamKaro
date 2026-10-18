@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Guide · Yetra{% endblock %}
+{% block title %}Guide · Tymora{% endblock %}
 {% block content %}
 {% set card = "bg-navy-light/90 border border-navy-lighter rounded-2xl p-6 mb-5" %}
 {% set h = "text-xl font-bold text-white mb-3" %}
@@ -7,8 +7,8 @@
 
 <div class="max-w-3xl mx-auto">
     <p class="text-yellow text-xs uppercase tracking-widest mb-2">Guide</p>
-    <h1 class="text-4xl font-bold text-white mb-3">How Yetra works</h1>
-    <p class="text-gray-400 text-lg mb-6">Tell Yetra what already fills your week and what you need to get done. It finds the gaps and places your work in them, and re-plans when anything changes.</p>
+    <h1 class="text-4xl font-bold text-white mb-3">How Tymora works</h1>
+    <p class="text-gray-400 text-lg mb-6">Tell Tymora what already fills your week and what you need to get done. It finds the gaps and places your work in them, and re-plans when anything changes.</p>
 
     <div class="flex flex-wrap gap-2 mb-8 text-sm">
         {% for anchor, label in [('start','Quick start'),('scheduling','How scheduling works'),('tasks','Tasks'),('calendar','Calendar'),('xp','XP, levels &amp; streaks'),('faq','Troubleshooting')] %}
@@ -22,7 +22,7 @@
             <li class="flex gap-4">
                 <span class="w-7 h-7 shrink-0 rounded-full bg-yellow text-navy text-sm font-bold flex items-center justify-center">1</span>
                 <div><p class="text-white font-semibold">Set your sleep hours</p>
-                <p class="text-gray-400 text-sm">On the <a class="text-yellow hover:underline" href="{{ url_for('commitments') }}">Commitments</a> page. Yetra never schedules over sleep, and hides it from your calendar.</p></div>
+                <p class="text-gray-400 text-sm">On the <a class="text-yellow hover:underline" href="{{ url_for('commitments') }}">Commitments</a> page. Tymora never schedules over sleep, and hides it from your calendar.</p></div>
             </li>
             <li class="flex gap-4">
                 <span class="w-7 h-7 shrink-0 rounded-full bg-yellow text-navy text-sm font-bold flex items-center justify-center">2</span>
@@ -32,7 +32,7 @@
             <li class="flex gap-4">
                 <span class="w-7 h-7 shrink-0 rounded-full bg-yellow text-navy text-sm font-bold flex items-center justify-center">3</span>
                 <div><p class="text-white font-semibold">Add your first task</p>
-                <p class="text-gray-400 text-sm">Choose the subject and chapter, a deadline, how hard it is and how long you think it will take. Yetra places it in your free time right away.</p></div>
+                <p class="text-gray-400 text-sm">Choose the subject and chapter, a deadline, how hard it is and how long you think it will take. Tymora places it in your free time right away.</p></div>
             </li>
             <li class="flex gap-4">
                 <span class="w-7 h-7 shrink-0 rounded-full bg-yellow text-navy text-sm font-bold flex items-center justify-center">4</span>
@@ -44,13 +44,13 @@
 
     <section id="scheduling" class="{{ card }}">
         <h2 class="{{ h }}">How scheduling works</h2>
-        <p class="{{ p }}">Yetra splits every day into <strong>30-minute slots</strong>. A slot is free if nothing else is using it: not sleep, not a recurring commitment, not a one-off event, not another task.</p>
+        <p class="{{ p }}">Tymora splits every day into <strong>30-minute slots</strong>. A slot is free if nothing else is using it: not sleep, not a recurring commitment, not a one-off event, not another task.</p>
         <ul class="list-disc pl-5 space-y-2 text-gray-300">
-            <li><strong>Deadline within 7 days:</strong> Yetra re-plans these every time something changes (a new task, a new commitment, a task completed). The most urgent go first, and when deadlines tie, shorter tasks go first.</li>
+            <li><strong>Deadline within 7 days:</strong> Tymora re-plans these every time something changes (a new task, a new commitment, a task completed). The most urgent go first, and when deadlines tie, shorter tasks go first.</li>
             <li><strong>Deadline further away, or none:</strong> placed once in the next free time after that 7-day window, then left alone so your future doesn't keep shuffling.</li>
             <li><strong>Harder tasks get extra time:</strong> about 10% more per difficulty level, because hard things run long.</li>
             <li><strong>Each session needs one unbroken block.</strong> A 90-minute task needs 90 free minutes in a row.</li>
-            <li><strong>Can't fit it?</strong> Yetra won't squeeze it in badly. It leaves it unscheduled and tells you which task, so you can fix it.</li>
+            <li><strong>Can't fit it?</strong> Tymora won't squeeze it in badly. It leaves it unscheduled and tells you which task, so you can fix it.</li>
         </ul>
     </section>
 
@@ -60,8 +60,8 @@
             <li><strong>Subject and chapter:</strong> ISC students pick from their own subjects, and the chapter list matches their class. Not listed? Use "Not in the list? Type your own". Everyone else types their own subject and chapter.</li>
             <li><strong>Difficulty (1 to 5):</strong> how hard the work is <em>for the content</em>, not for you. It sets the extra time and the XP.</li>
             <li><strong>Time:</strong> your honest estimate in minutes. Aim for realistic, not optimistic.</li>
-            <li><strong>Sessions:</strong> leave at 1 for a single sitting. A 6-hour video won't fit in one gap, so split it into 3 or 4 sessions and Yetra spreads them across days.</li>
-            <li><strong>Live preview:</strong> on the task form, the panel shows exactly how much time Yetra will reserve.</li>
+            <li><strong>Sessions:</strong> leave at 1 for a single sitting. A 6-hour video won't fit in one gap, so split it into 3 or 4 sessions and Tymora spreads them across days.</li>
+            <li><strong>Live preview:</strong> on the task form, the panel shows exactly how much time Tymora will reserve.</li>
         </ul>
     </section>
 
@@ -71,7 +71,7 @@
             <li>Yellow blocks are your scheduled tasks. Tap one for details and an Edit button.</li>
             <li>Your recurring and one-off commitments appear in the colours you picked.</li>
             <li>Use Prev and Next to move between weeks. On a phone you'll see one day at a time, with tabs along the top.</li>
-            <li>Deleting a commitment removes the whole block, and Yetra re-plans your tasks around the new free time.</li>
+            <li>Deleting a commitment removes the whole block, and Tymora re-plans your tasks around the new free time.</li>
         </ul>
     </section>
 
