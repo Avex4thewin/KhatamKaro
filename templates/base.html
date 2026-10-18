@@ -91,6 +91,7 @@
                     <a href="{{ url_for('dashboard') }}" class="hover:text-white">Dashboard</a>
                     <a href="{{ url_for('calendar') }}" class="hover:text-white">Calendar</a>
                     <a href="{{ url_for('commitments') }}" class="hover:text-white">Commitments</a>
+                    <a href="{{ url_for('guide') }}" class="hover:text-white">Guide</a>
                     <a href="{{ url_for('logout') }}" class="hover:text-white">Log Out</a>
                 </div>
                 <button class="md:hidden text-gray-300 hover:text-yellow" aria-label="Menu"
@@ -110,6 +111,7 @@
                 <a href="{{ url_for('dashboard') }}" class="py-2.5 hover:text-yellow">Dashboard</a>
                 <a href="{{ url_for('calendar') }}" class="py-2.5 hover:text-yellow">Calendar</a>
                 <a href="{{ url_for('commitments') }}" class="py-2.5 hover:text-yellow">Commitments</a>
+                <a href="{{ url_for('guide') }}" class="py-2.5 hover:text-yellow">Guide</a>
                 <a href="{{ url_for('logout') }}" class="py-2.5 hover:text-yellow">Log Out</a>
             </div>
             {% endif %}
@@ -129,6 +131,16 @@
 
             {% block content %}{% endblock %}
         </main>
+        <footer class="px-4 sm:px-8 py-8 mt-8 border-t border-navy-lighter text-xs text-gray-500">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+                <p>Yetra · a free, student-built planner</p>
+                <div class="flex gap-5">
+                    <a href="{{ url_for('guide') }}" class="hover:text-yellow">Guide</a>
+                    <a href="{{ url_for('legal') }}#terms" class="hover:text-yellow">Terms</a>
+                    <a href="{{ url_for('legal') }}#privacy" class="hover:text-yellow">Privacy</a>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <script>

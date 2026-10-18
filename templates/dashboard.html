@@ -13,6 +13,27 @@
     </a>
 </div>
 
+{% if not setup.done %}
+<div class="bg-navy-light border border-yellow/40 rounded-lg p-5 mb-6">
+    <div class="flex items-center justify-between mb-3">
+        <p class="text-yellow text-xs uppercase tracking-widest">Get started</p>
+        <a href="{{ url_for('guide') }}" class="text-xs text-gray-400 hover:text-yellow">Read the guide →</a>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+        {% for done, label, url in [
+            (setup.sleep, 'Set your sleep hours', url_for('commitments')),
+            (setup.commitments, 'Add school, tuition or other fixed commitments', url_for('commitments')),
+            (setup.tasks, 'Add your first task', url_for('new_task'))] %}
+        <a href="{{ url }}" class="flex items-center gap-3 rounded-lg border {% if done %}border-yellow/40{% else %}border-navy-lighter hover:border-yellow{% endif %} p-3 transition">
+            <span class="w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold {% if done %}bg-yellow text-navy{% else %}border border-gray-600 text-gray-500{% endif %}">{% if done %}✓{% else %}{{ loop.index }}{% endif %}</span>
+            <span class="{% if done %}text-gray-500 line-through{% else %}text-white{% endif %}">{{ label }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
 
     <div class="md:col-span-2 bg-gradient-to-br from-navy-light to-navy border border-yellow rounded-lg p-6 flex items-center justify-between">

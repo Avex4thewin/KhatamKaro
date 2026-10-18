@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from models import db, Task, FixedCommitment, ScheduledSlot, OneOffCommitment, User
+from timeutil import today_local, now_local
 
 TOTAL_SLOTS_PER_DAY = 48
 RECOMPUTE_WINDOW_DAYS = 7
@@ -103,7 +104,7 @@ def place_task(task, user_id, search_start_date, search_days):
 
 def run_scheduler(user_id):
     """Main entry point. Call this after adding/editing/completing a task."""
-    today = date.today()
+    today = today_local()
     recompute_cutoff = today + timedelta(days=RECOMPUTE_WINDOW_DAYS)
 
     ScheduledSlot.query.filter(

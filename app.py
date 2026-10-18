@@ -8,7 +8,7 @@ from flask_migrate import Migrate
 from datetime import date, timedelta, time, datetime
 from sqlalchemy import case
 from gamification import award_completion, revoke_completion, build_profile
-
+from timeutil import today_local, now_local
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -21,7 +21,7 @@ login_manager.init_app(app)
 login_manager.login_view='login'
 
 def greeting_for_now():
-    h = datetime.now().hour
+    h = now_local().hour
     if h < 5:
         return 'Still up'
     if h < 12:
@@ -112,12 +112,19 @@ def dashboard():
     tasks = query.all()
     pending_tasks = [t for t in tasks if not t.completed]
     completed_count = len([t for t in tasks if t.completed])
-    due_soon_count = len([t for t in pending_tasks if t.deadline and (t.deadline - date.today()).days <= 3])
+    due_soon_count = len([t for t in pending_tasks if t.deadline and (t.deadline - today_local()).days <= 3])
     next_task = min(pending_tasks, key=lambda t: t.deadline or date.max) if pending_tasks else None
+
+    setup = {
+        'sleep': current_user.sleep_start_slot is not None,
+        'commitments': FixedCommitment.query.filter_by(user_id=current_user.id).first() is not None,
+        'tasks': len(tasks) > 0,
+    }
+    setup['done'] = all(setup.values())    
 
     return render_template('dashboard.html', tasks=tasks, current_sort=sort_by, first_name=current_user.username.split()[0],
                             pending_count=len(pending_tasks), completed_count=completed_count, greeting=greeting_for_now(),
-                            due_soon_count=due_soon_count, next_task=next_task,
+                            due_soon_count=due_soon_count, next_task=next_task, setup = setup, 
                             profile=build_profile(current_user))
 
 @app.route('/task/new', methods=['GET', 'POST'])
@@ -307,7 +314,7 @@ def slot_to_time(slot):
 def deadline_urgency_class(deadline):
     if not deadline:
         return 'text-gray-400'
-    days_left = (deadline - date.today()).days
+    days_left = (deadline - today_local()).days
     if days_left < 0:
         return 'text-red-400 font-semibold'
     elif days_left == 0:
@@ -321,6 +328,16 @@ def deadline_urgency_class(deadline):
 
 
 app.jinja_env.globals.update(deadline_urgency_class=deadline_urgency_class)
+
+
+@app.route('/legal')
+def legal():
+    return render_template('legal.html')
+
+
+@app.route('/guide')
+def guide():
+    return render_template('guide.html')
 
 
 @app.route('/commitments', methods=['GET', 'POST'])
@@ -541,11 +558,16 @@ def delete_commitment_group():
     return redirect(url_for('commitments'))
 
 
+@app.route('/health')
+def health():
+    db.session.execute(db.text('SELECT 1'))
+    return 'ok'
+
 @app.route('/calendar')
 @app.route('/calendar/<int:week_offset>')
 @login_required
 def calendar(week_offset=0):
-    today = date.today()
+    today = today_local()
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     week_dates = [start_of_week + timedelta(days=i) for i in range(7)]
     user = User.query.get(current_user.id)

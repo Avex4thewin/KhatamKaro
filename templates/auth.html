@@ -37,13 +37,23 @@
 
         <form method="POST" class="space-y-4">
             {{ form.hidden_tag() }}
-            {% for field in form if field.name not in ['csrf_token', 'submit'] %}
+            {% for field in form if field.name not in ['csrf_token', 'submit', 'agree'] %}
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">{{ field.label.text }}</label>
                 {{ field(class="w-full bg-navy border border-navy-lighter rounded-lg px-3 py-2.5 text-white") }}
                 {% for err in field.errors %}<p class="text-red-400 text-xs mt-1">{{ err }}</p>{% endfor %}
             </div>
             {% endfor %}
+
+            {% if form.agree is defined %}
+            <div>
+                <label class="flex items-start gap-3 text-sm text-gray-400 cursor-pointer">
+                    {{ form.agree(class="mt-1 w-4 h-4 accent-[#FFB627]") }}
+                    <span>I agree to the <a href="{{ url_for('legal') }}#terms" target="_blank" class="text-yellow hover:underline">Terms</a> and <a href="{{ url_for('legal') }}#privacy" target="_blank" class="text-yellow hover:underline">Privacy Policy</a>. If I'm under 18, a parent or guardian knows I'm using Yetra.</span>
+                </label>
+                {% for err in form.agree.errors %}<p class="text-red-400 text-xs mt-1">{{ err }}</p>{% endfor %}
+            </div>
+            {% endif %}
             {{ form.submit(class="w-full rounded-lg bg-yellow text-navy font-semibold py-2.5 hover:shadow-[0_0_24px_rgba(255,182,39,0.45)] transition-shadow cursor-pointer") }}
         </form>
 
@@ -53,6 +63,9 @@
             {% else %}
                 Already on Yetra? <a href="{{ url_for('login') }}" class="text-yellow hover:underline">Log in</a>
             {% endif %}
+        </p>
+        <p class="text-sm text-gray-500 mt-6 text-center">
+            Forgot your Password? Text me.
         </p>
     </div>
 

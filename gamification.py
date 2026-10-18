@@ -1,6 +1,7 @@
 import math
 from datetime import date
 from models import db, SubjectXP
+from timeutil import today_local, now_local
 
 SHIELD_CAP = 3
 SUBJECT_TITLES = [(1, 'Novice'), (3, 'Apprentice'), (5, 'Adept'), (8, 'Expert'), (12, 'Master')]
@@ -36,7 +37,7 @@ def calc_xp(task):
     difficulty_mult = 1 + (task.difficulty or 1) * 0.5
     perf = 1.0
     if task.deadline:
-        days_early = (task.deadline - date.today()).days
+        days_early = (task.deadline - today_local()).days
         if days_early >= 1:
             perf = 1.2
         elif days_early < 0:
@@ -46,7 +47,7 @@ def calc_xp(task):
 
 def award_completion(user, task):
     events = []
-    today = date.today()
+    today = today_local()
 
     last = user.last_streak_date
     streak = user.current_streak or 0
@@ -108,7 +109,7 @@ def build_profile(user):
     total = user.xp_total or 0
     level, pct, into, span = progress(total)
 
-    today = date.today()
+    today = today_local()
     last = user.last_streak_date
     streak = user.current_streak or 0
     if last is None:
